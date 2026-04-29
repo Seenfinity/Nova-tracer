@@ -38,6 +38,8 @@ yarn-error.log*
 # AI session transcripts (proof of work — submitted separately to grant form)
 claude-session.jsonl
 codex-session.jsonl
+grant-submission/claude-session.jsonl
+grant-submission/codex-session.jsonl
 
 # Claude Code local settings (may contain personal tokens / approvals)
 .claude/settings.local.json

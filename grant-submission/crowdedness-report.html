@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>NOVA Tracer — Crowdedness Score</title>
+    <meta name="viewport" content="width=1200, initial-scale=1" />
+    <style>
+      :root {
+        --bg: oklch(0.145 0.015 152);
+        --card: oklch(0.185 0.018 152);
+        --fg: oklch(0.96 0.02 152);
+        --muted: oklch(0.68 0.04 152);
+        --primary: oklch(0.86 0.21 152);
+        --accent: oklch(0.78 0.18 200);
+        --warn: oklch(0.82 0.18 70);
+        --border: oklch(0.86 0.21 152 / 0.22);
+        --pill: oklch(0.86 0.21 152 / 0.12);
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          "Geist", sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.55;
+      }
+      body {
+        background-image:
+          radial-gradient(
+            ellipse 80% 60% at 50% -10%,
+            oklch(0.86 0.21 152 / 0.18),
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 60% 40% at 90% 110%,
+            oklch(0.78 0.18 200 / 0.1),
+            transparent 60%
+          );
+        background-attachment: fixed;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 56px 40px 80px;
+      }
+      .brand {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .brand .name { color: var(--primary); }
+      .brand .dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--primary);
+        box-shadow: 0 0 12px var(--primary);
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      h1 {
+        font-size: 44px;
+        line-height: 1.1;
+        margin: 28px 0 8px;
+        letter-spacing: -0.02em;
+      }
+      h1 em {
+        font-style: normal;
+        color: var(--primary);
+        text-shadow: 0 0 24px oklch(0.86 0.21 152 / 0.6);
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 14px;
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+      }
+      .score-card {
+        margin-top: 36px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px 36px;
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 36px;
+        align-items: center;
+        backdrop-filter: blur(8px);
+      }
+      .score-num {
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 96px;
+        font-weight: 600;
+        color: var(--primary);
+        text-shadow: 0 0 30px oklch(0.86 0.21 152 / 0.6);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+      .score-num small {
+        color: var(--muted);
+        font-size: 32px;
+        font-weight: 400;
+        text-shadow: none;
+      }
+      .score-label {
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .score-headline {
+        font-size: 22px;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+      .score-headline strong { color: var(--primary); }
+      .score-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: oklch(0.86 0.21 152 / 0.12);
+        margin-top: 18px;
+        position: relative;
+        overflow: hidden;
+      }
+      .score-bar::after {
+        content: "";
+        position: absolute;
+        inset: 0 80% 0 0;
+        background: linear-gradient(
+          90deg,
+          var(--primary),
+          var(--accent)
+        );
+        box-shadow: 0 0 18px var(--primary);
+        border-radius: 4px;
+      }
+      .score-bar-track {
+        margin-top: 8px;
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 10px;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .grid-3 {
+        margin-top: 40px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .stat {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px 22px;
+      }
+      .stat .lbl {
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .stat .val {
+        margin-top: 6px;
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .stat .val.accent { color: var(--primary); }
+
+      h2 {
+        margin-top: 52px;
+        margin-bottom: 16px;
+        font-size: 14px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        color: var(--primary);
+      }
+      h2::before {
+        content: "▸ ";
+        color: var(--primary);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .competitor {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 22px;
+      }
+      .competitor h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .competitor .meta {
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 4px 0 14px;
+      }
+      .competitor blockquote {
+        margin: 0 0 14px;
+        padding-left: 12px;
+        border-left: 2px solid var(--border);
+        color: var(--muted);
+        font-style: italic;
+        font-size: 14px;
+      }
+      .competitor .diff {
+        font-size: 13px;
+        color: var(--fg);
+      }
+      .competitor .diff strong { color: var(--primary); }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      th, td {
+        text-align: left;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      tr td:first-child {
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        color: var(--primary);
+        font-size: 12px;
+      }
+      .table-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-top: 12px;
+      }
+      .table-card table { margin-top: 0; }
+      .table-card th, .table-card td { padding: 14px 18px; }
+
+      ul.archive {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      ul.archive li {
+        padding: 12px 16px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+      }
+      ul.archive li .src {
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        white-space: nowrap;
+      }
+
+      footer {
+        margin-top: 64px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        font-family: ui-monospace, SFMono-Regular, "Geist Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="brand">
+        <div>
+          <span class="dot"></span>
+          <span>Project</span>
+          <span class="name">NOVA Tracer</span>
+        </div>
+        <div>Colosseum Copilot · 2026-04-29</div>
+      </div>
+
+      <h1>Crowdedness <em>Score</em></h1>
+      <div class="sub">
+        Forensic fund tracing for Solana scam victims · benchmark against
+        5,400+ Solana hackathon projects
+      </div>
+
+      <div class="score-card">
+        <div class="score-num">2<small>/10</small></div>
+        <div>
+          <div class="score-label">Verdict</div>
+          <div class="score-headline">
+            <strong>Low crowding.</strong> Zero direct competitors found in
+            the corpus for B2C, post-hack, retail-victim forensic tracing on
+            Solana.
+          </div>
+          <div class="score-bar"></div>
+          <div class="score-bar-track">
+            <span>0 — empty market</span>
+            <span>5 — moderate</span>
+            <span>10 — saturated</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="stat">
+          <div class="lbl">Corpus searched</div>
+          <div class="val">5,400+</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Tangent projects</div>
+          <div class="val">3</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Direct competitors</div>
+          <div class="val accent">0</div>
+        </div>
+      </div>
+
+      <h2>Closest tangent projects</h2>
+      <div class="row">
+        <div class="competitor">
+          <h3>Iknaio</h3>
+          <div class="meta">Cypherpunk · Sep 2025 · iknaio</div>
+          <blockquote>
+            "Data analytics platform automating cryptoasset investigations to
+            combat fraud, ransomware, and money laundering."
+          </blockquote>
+          <div class="diff">
+            <strong>B2B</strong> for law enforcement &amp; exchanges. NOVA
+            Tracer targets individual victims with a self-serve web tool.
+          </div>
+        </div>
+        <div class="competitor">
+          <h3>KryptoAPI</h3>
+          <div class="meta">Radar · Sep 2024 · kryptoapi</div>
+          <blockquote>
+            "A fraud detection system for Solana to mitigate rug-pulling,
+            wash-trading, pump-and-dump, reentrancy attacks."
+          </blockquote>
+          <div class="diff">
+            <strong>Preventive</strong> real-time scoring. NOVA Tracer is
+            <strong>post-incident</strong> — after funds already moved.
+          </div>
+        </div>
+        <div class="competitor">
+          <h3>Rug Raider</h3>
+          <div class="meta">Breakout · Apr 2025 · rug-raider</div>
+          <blockquote>
+            "AI powered Solana wallet and transaction safety tool to detect
+            and prevent rug pulls, token scams, and malicious drainers."
+          </blockquote>
+          <div class="diff">
+            Pre-signature defense. NOVA Tracer follows the money
+            <strong>after</strong> the drain.
+          </div>
+        </div>
+      </div>
+
+      <h2>Differentiation matrix</h2>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>NOVA Tracer</th>
+              <th>Iknaio</th>
+              <th>KryptoAPI</th>
+              <th>Rug Raider</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Customer</td>
+              <td>Retail victims</td>
+              <td>Law enforcement</td>
+              <td>Compliance teams</td>
+              <td>End users (pre-tx)</td>
+            </tr>
+            <tr>
+              <td>Timing</td>
+              <td>Post-incident</td>
+              <td>Post-incident</td>
+              <td>Real-time</td>
+              <td>Pre-incident</td>
+            </tr>
+            <tr>
+              <td>UX</td>
+              <td>Self-serve web</td>
+              <td>Enterprise dashboard</td>
+              <td>API platform</td>
+              <td>Wallet integration</td>
+            </tr>
+            <tr>
+              <td>Output</td>
+              <td>Flow graph + CEX exits</td>
+              <td>Case files</td>
+              <td>Risk scores</td>
+              <td>Drain warnings</td>
+            </tr>
+            <tr>
+              <td>Pricing</td>
+              <td>Free, no login</td>
+              <td>B2B sales</td>
+              <td>API metered</td>
+              <td>Wallet bundle</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Archive evidence</h2>
+      <ul class="archive">
+        <li>
+          <span>Why You Can't Trace Funds Through Services Using Blockchain Analysis</span>
+          <span class="src">chainalysis_research</span>
+        </li>
+        <li>
+          <span>Combatting Trafficking With Blockchain Analysis</span>
+          <span class="src">chainalysis_research</span>
+        </li>
+        <li>
+          <span>Anatomy of an Address Poisoning Scam</span>
+          <span class="src">chainalysis_research</span>
+        </li>
+        <li>
+          <span>The Great Bitcoin Dusting: A "Salomon Brothers" Client</span>
+          <span class="src">galaxy_research</span>
+        </li>
+        <li>
+          <span>A Near-Miss: How the NPM Breach Almost Wreaked Havoc for Crypto Users</span>
+          <span class="src">galaxy_research</span>
+        </li>
+        <li>
+          <span>"Report Hacker Wallet" — community pain point</span>
+          <span class="src">solana_repo_issues</span>
+        </li>
+      </ul>
+
+      <h2>Methodology summary</h2>
+      <div class="table-card">
+        <table>
+          <tbody>
+            <tr>
+              <td>Pre-flight</td>
+              <td>GET /status → authenticated: true · skill v1.2.1</td>
+            </tr>
+            <tr>
+              <td>Project queries</td>
+              <td>5 semantic queries (general, winners-only, accelerator-only, hack-specific, hackathon-filtered)</td>
+            </tr>
+            <tr>
+              <td>Detail lookups</td>
+              <td>7 top candidates inspected via /projects/by-slug/:slug</td>
+            </tr>
+            <tr>
+              <td>Archive queries</td>
+              <td>2 searches across Chainalysis, Galaxy Research, Solana repo</td>
+            </tr>
+            <tr>
+              <td>Top similarity</td>
+              <td>0.09 (median 0.04) — semantically empty space</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer>
+        <span>Github · Seenfinity/Nova-tracer</span>
+        <span>Built with Claude Code · Agentic Engineering Grant</span>
+      </footer>
+    </div>
+  </body>
+</html>
