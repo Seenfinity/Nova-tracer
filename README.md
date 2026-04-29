@@ -2,7 +2,7 @@
 
 > Forensic fund tracing for Solana scam victims — paste a stolen-from wallet, follow the money.
 
-**Status:** WIP for the Solana Frontier hackathon · built with the Agentic Engineering grant workflow.
+**Status:** WIP for the Solana Frontier hackathon 
 
 ## What it does
 
