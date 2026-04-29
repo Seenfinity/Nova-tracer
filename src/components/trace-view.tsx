@@ -2,20 +2,33 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowUpFromLine,
+  Loader2,
+  Network,
+  ShieldAlert,
+  Target,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { recordTrace } from "@/lib/tracked-store";
 import type { AddressLabel, TraceResult } from "@/lib/types";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
   loading: () => (
     <div className="flex h-full items-center justify-center">
-      <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+      <Loader2 className="text-primary h-6 w-6 animate-spin" />
     </div>
   ),
 });
@@ -37,6 +50,17 @@ type GraphLink = {
 
 type Props = { wallet: string };
 
+const COLOR = {
+  root: "#fbbf24",
+  cex: "#22d3ee",
+  mixer: "#f43f5e",
+  bridge: "#a855f7",
+  scammer: "#ef4444",
+  defi: "#10b981",
+  unknown: "#14f195",
+  edge: "rgba(20, 241, 149, 0.45)",
+};
+
 export function TraceView({ wallet }: Props) {
   const [state, setState] = useState<
     | { status: "loading" }
@@ -44,7 +68,7 @@ export function TraceView({ wallet }: Props) {
     | { status: "error"; message: string }
   >({ status: "loading" });
   const containerRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 600, height: 480 });
+  const [size, setSize] = useState({ width: 600, height: 520 });
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -60,7 +84,19 @@ export function TraceView({ wallet }: Props) {
         if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
         return json as TraceResult;
       })
-      .then((trace) => setState({ status: "ready", trace }))
+      .then((trace) => {
+        setState({ status: "ready", trace });
+        const cexHits = trace.nodes.filter(
+          (n) => n.label?.category === "cex" && n.depth > 0,
+        ).length;
+        recordTrace({
+          address: trace.rootAddress,
+          tracedAt: trace.generatedAt,
+          nodeCount: trace.nodes.length,
+          edgeCount: trace.edges.length,
+          cexHits,
+        });
+      })
       .catch((err) => {
         if (ctrl.signal.aborted) return;
         const message = err instanceof Error ? err.message : "trace failed";
@@ -103,11 +139,11 @@ export function TraceView({ wallet }: Props) {
 
   if (state.status === "loading") {
     return (
-      <div className="flex h-[480px] items-center justify-center rounded-lg border">
+      <div className="border-primary/30 bg-card/40 flex h-[520px] items-center justify-center rounded-lg border backdrop-blur-sm">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-          <p className="text-muted-foreground text-sm">
-            Tracing fund flow on-chain…
+          <Loader2 className="text-primary h-6 w-6 animate-spin" />
+          <p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
+            Following the money on-chain…
           </p>
         </div>
       </div>
@@ -134,84 +170,184 @@ export function TraceView({ wallet }: Props) {
   }
 
   const { trace } = state;
-  const labelled = trace.nodes.filter((n) => n.label);
+  const cexExits = trace.nodes.filter(
+    (n) => n.label?.category === "cex" && n.depth > 0,
+  );
+  const labelled = trace.nodes.filter((n) => n.label && n.depth > 0);
+  const rootNode = trace.nodes.find((n) => n.depth === 0);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Flow graph</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div ref={containerRef} className="h-[520px] w-full">
-            <ForceGraph2D
-              graphData={graphData}
-              width={size.width}
-              height={size.height}
-              nodeRelSize={5}
-              nodeColor={(n) => nodeColor(n as unknown as GraphNode)}
-              nodeLabel={(n) => {
-                const node = n as unknown as GraphNode;
-                return `${node.label?.name ?? truncate(node.id)}\nin: ${fmt(node.totalIn)} · out: ${fmt(node.totalOut)}`;
-              }}
-              linkLabel={(l) => {
-                const link = l as unknown as GraphLink;
-                return `${fmt(link.amount)} ${shortToken(link.token)}`;
-              }}
-              linkDirectionalArrowLength={4}
-              linkDirectionalArrowRelPos={1}
-              linkWidth={(l) =>
-                Math.min(
-                  0.5 + Math.log10((l as unknown as GraphLink).amount + 1),
-                  4,
-                )
-              }
-              cooldownTicks={80}
-            />
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-4">
+        <SummaryStat
+          icon={<Network className="h-4 w-4" />}
+          label="Nodes mapped"
+          value={trace.nodes.length}
+        />
+        <SummaryStat
+          icon={<Target className="h-4 w-4" />}
+          label="Edges traced"
+          value={trace.edges.length}
+        />
+        <SummaryStat
+          icon={<ArrowUpFromLine className="h-4 w-4" />}
+          label="Outflow (root)"
+          value={rootNode ? fmt(rootNode.totalOut) : "—"}
+        />
+        <SummaryStat
+          icon={<ShieldAlert className="h-4 w-4" />}
+          label="CEX exits"
+          value={cexExits.length}
+          accent={cexExits.length > 0}
+        />
+      </div>
 
-      <div className="space-y-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Stats</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <Stat label="Hops explored" value={String(trace.hopsExplored)} />
-            <Stat label="Nodes" value={String(trace.nodes.length)} />
-            <Stat label="Edges" value={String(trace.edges.length)} />
-            <Stat
-              label="Labelled destinations"
-              value={String(labelled.length)}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Known destinations
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <Card className="border-primary/20 bg-card/60 overflow-hidden backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-primary/90 font-mono text-xs uppercase tracking-widest">
+              ▸ Flow graph
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {labelled.length === 0 ? (
-              <p className="text-muted-foreground">
-                No known CEXs, mixers, or bridges in this trace.
-              </p>
-            ) : (
-              labelled.map((n) => (
-                <div key={n.id} className="flex items-center justify-between gap-2">
-                  <span className="truncate font-medium">{n.label?.name}</span>
-                  <Badge variant="secondary" className="text-xs">
-                    {n.label?.category}
-                  </Badge>
-                </div>
-              ))
-            )}
+          <CardContent className="p-0">
+            <div ref={containerRef} className="h-[560px] w-full">
+              <ForceGraph2D
+                graphData={graphData}
+                width={size.width}
+                height={size.height}
+                backgroundColor="rgba(0,0,0,0)"
+                nodeRelSize={5}
+                nodeColor={(n) => nodeColor(n as unknown as GraphNode)}
+                nodeLabel={(n) => {
+                  const node = n as unknown as GraphNode;
+                  return `${node.label?.name ?? truncate(node.id)}\nin: ${fmt(node.totalIn)} · out: ${fmt(node.totalOut)}`;
+                }}
+                linkColor={() => COLOR.edge}
+                linkLabel={(l) => {
+                  const link = l as unknown as GraphLink;
+                  return `${fmt(link.amount)} ${shortToken(link.token)}`;
+                }}
+                linkDirectionalArrowLength={4}
+                linkDirectionalArrowRelPos={1}
+                linkDirectionalArrowColor={() => COLOR.edge}
+                linkWidth={(l) =>
+                  Math.min(
+                    0.6 + Math.log10((l as unknown as GraphLink).amount + 1),
+                    4,
+                  )
+                }
+                cooldownTicks={80}
+              />
+            </div>
           </CardContent>
         </Card>
+
+        <div className="space-y-4">
+          <Card className="border-border bg-card/60 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
+                Trace stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <Stat label="Hops explored" value={String(trace.hopsExplored)} />
+              <Stat label="Total nodes" value={String(trace.nodes.length)} />
+              <Stat label="Total edges" value={String(trace.edges.length)} />
+              <Stat
+                label="Labelled destinations"
+                value={String(labelled.length)}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card/60 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
+                Known destinations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {labelled.length === 0 ? (
+                <p className="text-muted-foreground">
+                  No known CEXs, mixers, or bridges in this trace.
+                </p>
+              ) : (
+                labelled.map((n) => (
+                  <div
+                    key={n.id}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <span className="truncate font-medium">
+                      {n.label?.name}
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className={
+                        n.label?.category === "cex"
+                          ? "bg-accent/20 text-accent border-accent/40"
+                          : ""
+                      }
+                    >
+                      {n.label?.category}
+                    </Badge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {rootNode?.label ? (
+            <Card className="border-primary/40 bg-primary/5 backdrop-blur-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-primary font-mono text-xs uppercase tracking-widest">
+                  Root identity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm">
+                <p className="font-medium">{rootNode.label.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  This wallet itself is labelled as{" "}
+                  {rootNode.label.category}.
+                </p>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function SummaryStat({
+  icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`bg-card/60 rounded-lg border p-4 backdrop-blur-sm ${
+        accent ? "border-destructive/50" : "border-border"
+      }`}
+    >
+      <div className="text-muted-foreground flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest">
+        <span className={accent ? "text-destructive" : "text-primary"}>
+          {icon}
+        </span>
+        {label}
+      </div>
+      <p
+        className={`mt-2 font-mono text-2xl font-semibold tabular-nums ${
+          accent ? "text-destructive" : ""
+        }`}
+      >
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </p>
     </div>
   );
 }
@@ -226,11 +362,21 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function nodeColor(n: GraphNode): string {
-  if (n.depth === 0) return "#f59e0b";
-  if (n.label?.category === "cex") return "#3b82f6";
-  if (n.label?.category === "mixer") return "#ef4444";
-  if (n.label?.category === "bridge") return "#a855f7";
-  return "#64748b";
+  if (n.depth === 0) return COLOR.root;
+  switch (n.label?.category) {
+    case "cex":
+      return COLOR.cex;
+    case "mixer":
+      return COLOR.mixer;
+    case "bridge":
+      return COLOR.bridge;
+    case "scammer":
+      return COLOR.scammer;
+    case "defi":
+      return COLOR.defi;
+    default:
+      return COLOR.unknown;
+  }
 }
 
 function truncate(s: string): string {
@@ -250,3 +396,4 @@ function shortToken(t: string): string {
   if (t === "SOL") return "SOL";
   return truncate(t);
 }
+
