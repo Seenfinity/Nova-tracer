@@ -38,3 +38,27 @@ export type NarrationResponse = {
   narrative: string;
   keyFindings: string[];
 };
+
+export type HeliusNativeTransfer = {
+  fromUserAccount: string;
+  toUserAccount: string;
+  amount: number;
+};
+
+export type HeliusTokenTransfer = {
+  fromUserAccount: string;
+  toUserAccount: string;
+  tokenAmount: number;
+  mint: string;
+};
+
+export type HeliusEnhancedTx = {
+  signature: string;
+  timestamp: number;
+  type?: string;
+  source?: string;
+  fee?: number;
+  feePayer?: string;
+  nativeTransfers?: HeliusNativeTransfer[];
+  tokenTransfers?: HeliusTokenTransfer[];
+};

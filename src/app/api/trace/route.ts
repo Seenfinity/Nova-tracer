@@ -1,31 +1,32 @@
 import { NextResponse } from "next/server";
-import { getHeliusClient } from "@/lib/helius";
-import type { TraceResult } from "@/lib/types";
+import { isLikelyAddress, traceWallet } from "@/lib/trace";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const { wallet, maxHops = 2 } = (await req.json()) as {
-    wallet?: string;
-    maxHops?: number;
-  };
+  let body: { wallet?: string; maxHops?: number };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
+  }
 
-  if (!wallet || typeof wallet !== "string") {
+  const wallet = body.wallet?.trim();
+  if (!wallet || !isLikelyAddress(wallet)) {
     return NextResponse.json(
-      { error: "wallet is required" },
+      { error: "wallet is missing or not a valid Solana address" },
       { status: 400 },
     );
   }
 
-  getHeliusClient();
+  const maxHops = Math.min(Math.max(Number(body.maxHops) || 2, 1), 3);
 
-  const result: TraceResult = {
-    rootAddress: wallet,
-    nodes: [],
-    edges: [],
-    generatedAt: Date.now(),
-    hopsExplored: maxHops,
-  };
-
-  return NextResponse.json(result);
+  try {
+    const result = await traceWallet(wallet, { maxHops });
+    return NextResponse.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "trace failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
