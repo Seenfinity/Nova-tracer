@@ -32,6 +32,12 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
+!.env.example
+
+# AI session transcripts (proof of work — submitted separately to grant form)
+claude-session.jsonl
+codex-session.jsonl
 
 # vercel
 .vercel
