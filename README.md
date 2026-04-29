@@ -34,7 +34,7 @@ cp .env.local.example .env.local
 
 # 3. Run
 npm run dev
-# open http://localhost:3000
+# open http://localhost:3030
 ```
 
 ## Project layout
