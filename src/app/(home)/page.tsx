@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
+import { isLikelyAddress } from "@/lib/trace";
 
 import {
   HOT_EDGE_KEYS,
@@ -59,7 +62,25 @@ export default function HomePage() {
 
   function submitTrace(addr: string) {
     const trimmed = addr.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      toast.error("Paste a wallet first", {
+        description: "We need a Solana address to start the trace.",
+      });
+      return;
+    }
+    // signature-vs-address heuristic
+    if (trimmed.length > 60) {
+      toast.error("That looks like a transaction signature", {
+        description: "Paste the wallet (32–44 chars) instead.",
+      });
+      return;
+    }
+    if (!isLikelyAddress(trimmed)) {
+      toast.error("Invalid Solana address", {
+        description: "Solana addresses are base58, 32–44 characters.",
+      });
+      return;
+    }
     router.push(`/trace/${encodeURIComponent(trimmed)}`);
   }
 
