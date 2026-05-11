@@ -1,81 +1,56 @@
-# NOVA Tracer — Agentic Engineering Grant · Texto para copy-paste
+# NOVA Tracer — Grant copy
 
-> Submit at: https://superteam.fun/earn/grants/agentic-engineering · 200 USDG fixed.
-
-This document contains **only the long-form text fields** generated for you.
-Everything else (TG, wallet, X, GitHub, Proof of Work, KPI, deadline,
-Crowdedness Drive link, AI transcript attach) you fill directly into the
-form yourself.
+> Submit at: https://superteam.fun/earn/grants/agentic-engineering · 200 USDG
 
 ---
 
-## Step 1 · Basics
-
-**Project Title**
+## Project Title
 
 > NOVA Tracer
 
-**One Line Description**
+---
 
-> Forensic fund tracing for Solana scam victims — paste a wallet, follow the multi-hop money flow, identify CEX/mixer exits.
+## Description (< 150 chars) — pick one
+
+**Option A — punchy** *(124 chars)*
+
+> Forensic fund tracing for Solana scam victims. Paste a wallet, follow the multi-hop money flow, spot CEX & mixer exits.
+
+**Option B — outcome-first** *(142 chars)*
+
+> Solana-native web app that lets scam victims trace stolen funds across hops and pinpoint the CEX or mixer where the money exited the chain.
+
+**Option C — minimal** *(95 chars)*
+
+> Paste a Solana wallet, see exactly where the stolen funds went. CEX & mixer detection built in.
+
+**Option D — for hackathon judges** *(145 chars)*
+
+> Multi-hop on-chain fund tracer for Solana scam victims — BFS over Helius transactions, CEX/mixer detection, interactive graph, free, no login.
 
 ---
 
-## Step 2 · Details
+## Goals and Milestones
 
-**Project Details**
-
-> NOVA Tracer is a Solana-native web app that helps scam victims investigate where their stolen funds went. A victim pastes their wallet address, and the app runs a bounded breadth-first walk over recent on-chain transactions using the Helius Enhanced Transactions API — surfacing native SOL and SPL token transfers across multiple hops, identifying known destinations (centralized-exchange hot wallets, mixers, bridges), and rendering the full flow as an interactive force-directed graph.
+> **M1 — Public deployment + label expansion (~1 week)**
+> Deploy to Vercel; grow the address dictionary to ≥30 CEX hot wallets, Solana bridges (Wormhole, Allbridge, Mayan), and 5+ scammer clusters; ship address-poisoning detection.
 >
-> Today, post-hack investigation on Solana is fragmented and inaccessible. Existing tools like Iknaio target enterprise compliance teams; KryptoAPI focuses on real-time fraud signals; Rug Raider is preventive (pre-signature defense). Nothing in the Colosseum corpus of 5,400+ projects addresses the specific moment a retail user asks: *"I just got drained — where did my SOL go?"*. Chainalysis itself has published research on the difficulty of tracing past CEX deposits — that is exactly the problem NOVA Tracer surfaces clearly to a non-technical user, free, with no login.
+> **M2 — Trace UX & sharing (~1 week)**
+> Per-trace permalinks, JSON export, shareable static reports, mobile-responsive graph, polished empty/error states.
 >
-> The product is built end-to-end with Claude Code as part of the Agentic Engineering workflow: from scaffolding (Next.js 15 + Tailwind v4 + shadcn/ui) to the BFS engine, force-graph visualization, label dictionary, and Solana-themed UI. The grant funds extending the labelled-address dictionary (more CEXs, Solana-native bridges like Wormhole/Allbridge, mixers, known scammer clusters), shipping a public deployment, and submitting to the Solana Frontier hackathon.
+> **M3 — Hackathon ship (~1 week)**
+> Demo video, pitch summary, submit to Solana Frontier hackathon, first public launch posts.
 
 ---
 
-## Step 3 · Milestones
+## Primary KPI suggestions — pick one
 
-**Goals and Milestones**
-
-> **M1 — Public deployment + labelled dictionary expansion (~1 week)**
-> - Deploy to Vercel with custom domain
-> - Expand the labelled-address dictionary to ≥30 known CEX hot wallets, Solana bridges (Wormhole, Allbridge, Mayan), and at least 5 publicly reported scammer clusters
-> - Edge-case handling: zero-flow wallets, address poisoning detection, validation feedback in UI
->
-> **M2 — Trace UX polish + sharing (~1 week)**
-> - Permalinks per trace (URL params for the trace inputs)
-> - Export trace as JSON / shareable static page
-> - Mobile-responsive graph rendering
-> - Empty/no-flow and error states with actionable copy
->
-> **M3 — Hackathon readiness (~1 week)**
-> - Demo video (Remotion / screen-recorded walkthrough using a real laundering case)
-> - Submission package: pitch summary, project description, demo wallet
-> - Submit to Solana Frontier hackathon
-> - First public round of social posts
-
-**Primary KPI suggestions** *(pick one or write your own)*
-
-> - **Operational**: 100 unique wallets traced in the first 30 days post-launch.
-> - **Outcome**: 10 verifiable cases where the NOVA Tracer report was used to contact an exchange / file a case.
-> - **Recognition**: Top-3 placement in the Solana Frontier hackathon track.
+- **Operational**: 100 unique wallets traced in the first 30 days post-launch.
+- **Outcome**: 10 verifiable cases where the NOVA Tracer report was used to contact an exchange / file a case.
+- **Recognition**: Top-3 placement in the Solana Frontier hackathon track.
 
 ---
 
-## What you fill yourself directly in the form
+## Filled by you directly in the form
 
-These fields are personal / single-link inputs — no draft text needed:
-
-- **TG username**
-- **Wallet Address**
-- **Personal X Profile**
-- **Personal GitHub Profile**
-- **Proof of Work**
-- **Deadline** (Asia/Calcutta tz)
-- **Colosseum Crowdedness Score**: paste the public Drive link to `crowdedness-score.png`
-- **AI Session Transcript**: attach `claude-session.jsonl`
-- **Primary KPI**: pick from suggestions above
-
----
-
-*Generated for Seenfinity (Dangelxp2@gmail.com). Built with Claude Code.*
+TG · Wallet · X · GitHub · Proof of Work · Deadline · Crowdedness Score Drive link · AI session transcript attach · Primary KPI choice.

@@ -5,7 +5,7 @@
       "name": "nova-tracer",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3030
+      "port": 4040
     }
   ]
 }

@@ -44,6 +44,9 @@ grant-submission/codex-session.jsonl
 # Claude Code local settings (may contain personal tokens / approvals)
 .claude/settings.local.json
 
+# Voight agent id (per-machine)
+.voight-agent-id
+
 # vercel
 .vercel
 
