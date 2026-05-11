@@ -284,7 +284,7 @@ function Tracer() {
       panStartY = 0;
     let panStartPX = 0,
       panStartPY = 0;
-    let rafs: number[] = [];
+    const rafs: number[] = [];
 
     function render() {
       gE.innerHTML = "";

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { TraceConsole } from "./trace-console";
 import { isLikelyAddress } from "@/lib/trace";
 import "../../(home)/landing.css";
@@ -51,9 +53,9 @@ export default async function TracePage({
               Solana addresses are base58-encoded and 32–44 characters long.
               Double-check what you pasted, or go back to start a new trace.
             </p>
-            <a className="btn primary" href="/">
+            <Link className="btn primary" href="/">
               ← Back to home
-            </a>
+            </Link>
           </div>
         </main>
       </div>
